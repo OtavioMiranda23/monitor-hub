@@ -5,7 +5,7 @@ Projeto minimalista Java com Spring Boot 3 e Docker pronto para desenvolvimento 
 ## 🚀 Estrutura do Projeto
 
 ```
-hello-world-springboot/
+monitor-hub-springboot/
 ├── .github/workflows/
 │   └── deploy.yml
 ├── .env.example
@@ -51,12 +51,12 @@ docker compose down
 
 Construa a imagem Docker:
 ```bash
-docker build -t hello-world-springboot .
+docker build -t monitor-hub-springboot .
 ```
 
 Rode o container:
 ```bash
-docker run -p 8080:8080 hello-world-springboot
+docker run -p 8080:8080 monitor-hub-springboot
 ```
 
 ### 3. Localmente com Maven
