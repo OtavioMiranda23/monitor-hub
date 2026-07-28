@@ -2,7 +2,7 @@ package com.example.helloworld.domain.entities;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "incidents")
@@ -20,16 +20,16 @@ public class Incident {
     private IncidentStatus status;
 
     @Column(nullable = false)
-    private LocalDateTime startedAt;
+    private Instant startedAt;
 
-    private LocalDateTime resolvedAt;
+    private Instant resolvedAt;
 
     @Column(length = 2000)
     private String cause;
 
     @PrePersist
     protected void onCreate() {
-        startedAt = LocalDateTime.now();
+        startedAt = Instant.now();
     }
 
     // getters e setters

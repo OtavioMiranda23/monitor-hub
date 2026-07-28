@@ -3,8 +3,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -14,6 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
+@Setter
 public class MonitorEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -42,7 +44,10 @@ public class MonitorEntity {
     private Boolean active = true;
 
     @Column(nullable = false)
-    private LocalDateTime createdAt;
+    private Instant nextExecution;
+
+    @Column(nullable = false)
+    private Instant createdAt;
 
     @OneToMany(
             mappedBy = "monitor",
@@ -64,6 +69,7 @@ public class MonitorEntity {
             MonitorType type,
             Integer intervalToRunSeconds,
             Integer timeoutMilliseconds
+
     ) {
         this.name = name;
         this.url = url;
@@ -74,7 +80,7 @@ public class MonitorEntity {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = Instant.now();
     }
 
 }
