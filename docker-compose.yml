@@ -10,15 +10,26 @@ services:
 
     depends_on:
       - postgres
+      - rabbitmq
 
     ports:
       - "${PORT:-8080}:8080"
+      - "5005:5005"
 
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/monitorhub
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+      JAVA_TOOL_OPTIONS: >
+        -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+
+
   postgres:
     image: postgres:17
 
@@ -33,11 +44,27 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-monitorhub}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      TZ: UTC
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+
+  rabbitmq:
+    image: rabbitmq:3-management
+
+    container_name: monitor-hub-rabbitmq
+
+    restart: unless-stopped
+
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+
 volumes:
   postgres_data:
-
-

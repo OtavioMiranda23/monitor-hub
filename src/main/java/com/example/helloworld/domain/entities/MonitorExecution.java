@@ -1,15 +1,23 @@
 package com.example.helloworld.domain.entities;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.time.LocalDateTime;
-
+import java.time.Instant;
+import java.util.UUID;
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 @Entity
 @Table(name = "monitor_executions")
 public class MonitorExecution {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "monitor_id", nullable = false)
@@ -27,12 +35,21 @@ public class MonitorExecution {
     private String errorMessage;
 
     @Column(nullable = false)
-    private LocalDateTime checkedAt;
+    private Instant checkedAt;
 
     @PrePersist
     protected void onCreate() {
-        checkedAt = LocalDateTime.now();
+        checkedAt = Instant.now();
     }
-
-    // getters e setters
+    public MonitorExecution(
+            MonitorEntity monitor,
+            ExecutionStatus status,
+            Integer httpStatusCode,
+            Long responseTimeMilliseconds
+            ) {
+        this.monitor = monitor;
+        this.status = status;
+        this.httpStatusCode = httpStatusCode;
+        this.responseTimeMilliseconds = responseTimeMilliseconds;
+    }
 }
