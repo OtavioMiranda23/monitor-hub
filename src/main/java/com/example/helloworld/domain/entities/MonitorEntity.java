@@ -83,4 +83,8 @@ public class MonitorEntity {
         createdAt = Instant.now();
     }
 
+    public void setNextExecution() {
+        this.nextExecution = Instant.now().plusSeconds(this.getIntervalToRunSeconds());
+    }
+
 }

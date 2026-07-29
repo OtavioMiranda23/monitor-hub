@@ -1,20 +1,25 @@
 package com.example.helloworld.domain.entities;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
+import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "incidents")
 public class Incident {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "monitor_id", nullable = false)
     private MonitorEntity monitor;
-
+    //TODO: Criar relacionamento com monitorExecutation
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private IncidentStatus status;
@@ -32,5 +37,11 @@ public class Incident {
         startedAt = Instant.now();
     }
 
-    // getters e setters
+    public Incident(MonitorEntity monitor, IncidentStatus status, Instant startedAt, String cause) {
+        this.monitor = monitor;
+        this.status = status;
+        this.startedAt = startedAt;
+        this.cause = cause;
+
+    }
 }
