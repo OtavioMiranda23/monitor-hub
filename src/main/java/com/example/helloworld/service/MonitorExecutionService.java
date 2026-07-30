@@ -2,12 +2,14 @@ package com.example.helloworld.service;
 
 import com.example.helloworld.domain.entities.ExecutionStatus;
 import com.example.helloworld.domain.entities.MonitorEntity;
+import com.example.helloworld.domain.entities.MonitorExecution;
 import com.example.helloworld.infra.queue.MonitorExecutionFailedEvent;
 import com.example.helloworld.infra.queue.RabbitMQConfig;
 import com.example.helloworld.infra.repositories.MonitorExecutionRepository;
 import com.example.helloworld.infra.repositories.MonitorRepository;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatusCode;
@@ -19,10 +21,14 @@ import org.springframework.util.StopWatch;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.RestTemplate;
 
+import javax.management.monitor.Monitor;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -30,80 +36,101 @@ import java.util.concurrent.Executors;
 public class MonitorExecutionService {
     @Autowired
     public MonitorRepository monitorRepository;
+
     @Autowired
     public MonitorExecutionRepository monitorExecutionRepository;
 
     @Autowired
-    private final RabbitTemplate rabbitTemplate;
+    public RabbitTemplate rabbitTemplate;
 
-    //    @Scheduled(cron = "0 */5 * * * *")
-    @Scheduled(fixedRate = 10000)
+    @Value("${monitor.batch-size}")
+    private Integer batchSize;
+
+    @Scheduled(cron = "${monitor.scan.cron}")
     public void scanMonitors() {
-        Pageable pageable = PageRequest.of(0, 50);
-        List<MonitorEntity> monitors = this.monitorRepository.findMonitorsToScanNow(Instant.now(), pageable);
-        System.out.printf("EXECUTA findMonitorsToScanNow: " + monitors);
         try (ExecutorService executor =
                      Executors.newVirtualThreadPerTaskExecutor()) {
-            for (MonitorEntity monitor : monitors) {
-                executor.submit(() -> this.requestBatch(monitor));
-            }
+            var monitors = this.findMonitorsToScan();
+            monitors.forEach(this::requestBatch);
         }
     }
 
     public void requestBatch(MonitorEntity monitor) {
-        var executionStatus = ExecutionStatus.SUCCESS;
-        HttpStatusCode statusCode = null;
         var stopWatch = new StopWatch();
+        var result = this.probeTarget(monitor);
+        if (stopWatch.isRunning()) stopWatch.stop();
+        Long reqIntervalMillis = stopWatch.getTotalTimeMillis();
+        var monitorExecution = this.createMonitorExecution(monitor, result, reqIntervalMillis);
+        monitor.setNextExecution();
+        var newMonitor = this.monitorRepository.save(monitor);
+        if (monitorExecution.getStatus() == ExecutionStatus.FAILURE) {
+            this.emitFailedEvent(monitorExecution, newMonitor.getId());
+        }
+    }
+
+    private List<MonitorEntity> findMonitorsToScan() {
+        Pageable pageable = PageRequest.of(0, this.batchSize);
+        return this.monitorRepository.findMonitorsToScanNow(Instant.now(), pageable);
+    }
+
+    private RestClient getRestClient(Integer connectTimeout, Integer readTimeout) {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofMillis(connectTimeout));
+        requestFactory.setReadTimeout(Duration.ofMillis(readTimeout));
+        return RestClient
+                .builder().
+                requestFactory(requestFactory)
+                .build();
+
+    }
+
+    private ProbeResult probeTarget(MonitorEntity monitor) {
         try {
-            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-            requestFactory.setConnectTimeout(Duration.ofMillis(monitor.getTimeoutMilliseconds()));
-            requestFactory.setReadTimeout(Duration.ofMillis(monitor.getTimeoutMilliseconds()));
-            stopWatch.start();
-            var defaultClient = RestClient.builder();
-            RestClient client = defaultClient
-                    .requestFactory(requestFactory)
-                    .build();
+            var client = this.getRestClient(
+                    monitor.getTimeoutMilliseconds(),
+                    monitor.getTimeoutMilliseconds()
+            );
             ResponseEntity<String> response = client
                     .get()
                     .uri(monitor.getUrl())
                     .retrieve()
                     .toEntity(String.class);
-            statusCode = response.getStatusCode();
+            return new ProbeResult(ExecutionStatus.SUCCESS, Optional.of(response.getStatusCode().value()));
         } catch (ResourceAccessException ex) {
-            executionStatus = ExecutionStatus.TIMEOUT;
+            return new ProbeResult(ExecutionStatus.TIMEOUT, Optional.empty());
         } catch (RestClientResponseException ex) {
-            executionStatus = ExecutionStatus.FAILURE;
-            statusCode = ex.getStatusCode();
+            return new ProbeResult(ExecutionStatus.FAILURE, Optional.of(ex.getStatusCode().value()));
         } catch (Exception ex) {
-            executionStatus = ExecutionStatus.FAILURE;
             System.err.println("Erro inesperado: " + ex.getMessage());
-            //TODO: Construir sistema de observiblidade;
-        }
-        if (stopWatch.isRunning())
-        {
-            stopWatch.stop();
-        }
-        Long reqIntervalMillis = stopWatch.getTotalTimeMillis();
-        var monitorExecution = new com.example.helloworld.domain.entities.MonitorExecution(
-                monitor,
-                executionStatus,
-                statusCode != null ? statusCode.value() : 0,
-                reqIntervalMillis);
-        this.monitorExecutionRepository.save(monitorExecution);
-        Instant nextExecution = Instant.now().plusSeconds(monitor.getIntervalToRunSeconds());
-        monitor.setNextExecution(nextExecution);
-        this.monitorRepository.save(monitor);
-        if (monitorExecution.getStatus().equals(ExecutionStatus.FAILURE)) {
-            var event = new MonitorExecutionFailedEvent(
-                    monitor.getId(),
-                    monitorExecution.getId(),
-                    monitorExecution.getStatus()
-                    );
-            rabbitTemplate.convertAndSend(
-                    RabbitMQConfig.EXCHANGE,
-                    RabbitMQConfig.ROUTING_KEY,
-                    event
-            );
+            return new ProbeResult(ExecutionStatus.FAILURE, Optional.empty());
         }
     }
+
+    private record ProbeResult(ExecutionStatus executionStatus, Optional<Integer> statusCode){}
+
+    private MonitorExecution createMonitorExecution(MonitorEntity monitor, ProbeResult result, Long requestTime) {
+        var monitorExecution = new MonitorExecution(
+                monitor,
+                result.executionStatus,
+                result.statusCode.orElse(500),
+                requestTime
+        );
+        return this.monitorExecutionRepository.save(monitorExecution);
+    }
+
+
+    private void emitFailedEvent(MonitorExecution execution, UUID monitorId) {
+        var event = new MonitorExecutionFailedEvent(
+                monitorId,
+                execution.getId(),
+                execution.getStatus()
+        );
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE,
+                RabbitMQConfig.ROUTING_KEY,
+                event
+        );
+    }
+
+
 }

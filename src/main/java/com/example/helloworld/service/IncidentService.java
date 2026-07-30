@@ -8,6 +8,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class IncidentService {
     public void createIncident(MonitorExecutionFailedEvent failedEvent) {
-        new Incident(failedEvent.monitorId(), );
+//        new Incident(failedEvent.monitorId(), );
     }
 }
