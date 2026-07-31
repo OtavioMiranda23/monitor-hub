@@ -1,7 +1,10 @@
 package com.example.helloworld.controller;
 
+import com.example.helloworld.domain.entities.Incident;
+import com.example.helloworld.infra.repositories.IncidentRepository;
 import com.example.helloworld.infra.repositories.MonitorRepository;
 import com.example.helloworld.service.MonitorService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +19,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestClient;
+
+import java.util.UUID;
 
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -36,8 +41,12 @@ class VerifyUrlControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
     @Autowired
     private MonitorRepository monitorRepository;
+
+    @Autowired
+    private IncidentRepository incidentRepository;
 
     @BeforeEach
     void setup(){
@@ -88,5 +97,27 @@ class VerifyUrlControllerTest {
 
         assertThat(json.get("createdAt"))
                 .isNotNull();
+    }
+
+    @Test
+    void shouldCreateIncident() throws JsonProcessingException {
+        String requestJson = """
+                {
+                    "name": "Timeout",
+                    "url": "https://httpstat.us/200?sleep=10000"
+                }
+                """;
+        var client = RestClient.create();
+        ResponseEntity<String> response = client.post()
+                .uri("http://localhost:8080/monitors")
+                .contentType(APPLICATION_JSON)
+                .body(requestJson)
+                .retrieve()
+                .toEntity(String.class);
+        JsonNode json = objectMapper.readTree(response.getBody());
+        var monitorId = json.get("id").asText();
+        Incident incident = this.incidentRepository.findByMonitorId(UUID.fromString(monitorId)).orElseThrow();
+        assertThat(incident.getId()).isNotNull();
+
     }
 }
