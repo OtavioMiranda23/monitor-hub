@@ -15,9 +15,8 @@ public class MonitorExecutionFailedConsumer {
     @Autowired
     public IncidentService incidentService;
 
-    @RabbitListener(queues = RabbitMQConfig.QUEUE)
+    @RabbitListener(queues = RabbitMQConfig.INCIDENT_QUEUE)
     public void handle(MonitorExecutionFailedEvent event) {
-        System.out.println("EVENTO DE FALHA CRIADO: " + event);
         incidentService.createIncident(event);
     }
 }
