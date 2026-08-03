@@ -6,6 +6,7 @@ import com.example.helloworld.domain.entities.MonitorExecution;
 import com.example.helloworld.infra.queue.MonitorExecutionFailedEvent;
 import com.example.helloworld.infra.queue.MonitorExecutionResolvedEvent;
 import com.example.helloworld.infra.queue.RabbitMQConfig;
+import com.example.helloworld.infra.repositories.IncidentRepository;
 import com.example.helloworld.infra.repositories.MonitorExecutionRepository;
 import com.example.helloworld.infra.repositories.MonitorRepository;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -42,6 +43,9 @@ public class MonitorExecutionService {
     public MonitorExecutionRepository monitorExecutionRepository;
 
     @Autowired
+    public IncidentRepository incidentRepository;
+
+    @Autowired
     public RabbitTemplate rabbitTemplate;
 
     @Value("${monitor.batch-size}")
@@ -61,13 +65,14 @@ public class MonitorExecutionService {
         var result = this.probeTarget(monitor);
         if (stopWatch.isRunning()) stopWatch.stop();
         Long reqIntervalMillis = stopWatch.getTotalTimeMillis();
-        System.out.printf("reqIntervalMillis: " + reqIntervalMillis);
         var monitorExecution = this.createMonitorExecution(monitor, result, reqIntervalMillis);
         monitor.setNextExecution();
         var newMonitor = this.monitorRepository.save(monitor);
         if (monitorExecution.getStatus() == ExecutionStatus.FAILURE || monitorExecution.getStatus() == ExecutionStatus.TIMEOUT) {
             this.emitFailedEvent(monitorExecution, newMonitor.getId());
+            return;
         }
+        this.emitResolveIncident(monitorExecution);
     }
 
     private List<MonitorEntity> findMonitorsToScan() {
@@ -129,27 +134,27 @@ public class MonitorExecutionService {
         );
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.EXCHANGE,
-                RabbitMQConfig.ROUTING_KEY,
+                RabbitMQConfig.INCIDENT_ROUTING_KEY,
                 event
         );
     }
 
-    private void executionActualResolveIncident(MonitorExecution execution) {
-        //resolver incidente no service do executor:
-        //se houver um incidente não resolvido e a execução atual for um sucesso
-        boolean hasIncidentNotResolved = execution.getMonitor().getIncidents().getLast().getResolvedAt() == null;
-        if (hasIncidentNotResolved && execution.getStatus().equals(ExecutionStatus.SUCCESS)) {
+    private void emitResolveIncident(MonitorExecution execution) {
+        if (!execution.getStatus().equals(ExecutionStatus.SUCCESS)) return;
+        var incidents = this.incidentRepository.findAllByMonitorId(
+                execution.getMonitor().getId()
+        );
+        if (incidents.isEmpty() || incidents.get().isEmpty()) return;
+        var incident = incidents.get().getLast();
+        boolean hasIncidentNotResolved = incident.getResolvedAt() == null;
+        if (hasIncidentNotResolved) {
             var event = new MonitorExecutionResolvedEvent(execution.getMonitor().getId(), execution.getId());
             rabbitTemplate.convertAndSend(
                     RabbitMQConfig.EXCHANGE,
-                    RabbitMQConfig.ROUTING_KEY,
+                    RabbitMQConfig.RESOLVED_ROUTING_KEY,
                     event
             );
 
         }
-        //então disparar evento de atualizar o incidente como resolvido
-
     }
-
-
 }

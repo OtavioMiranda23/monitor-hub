@@ -12,12 +12,12 @@ public class IncidentConsumer {
     @Autowired
     public IncidentService incidentService;
 
-    @RabbitListener(queues = RabbitMQConfig.QUEUE)
+    @RabbitListener(queues = RabbitMQConfig.INCIDENT_QUEUE)
     public void consume(MonitorExecutionFailedEvent event) {
         incidentService.createIncident(event);
     }
 
-    @RabbitListener(queues = RabbitMQConfig.QUEUE)
+    @RabbitListener(queues = RabbitMQConfig.RESOLVED_INCIDENT_QUEUE)
     public void consume(MonitorExecutionResolvedEvent event) {
         incidentService.resolveIncident(event);
     }

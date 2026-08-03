@@ -1,22 +1,29 @@
 package com.example.helloworld.infra.queue;
 
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
     public static final String EXCHANGE = "monitor.exchange";
-    public static final String QUEUE = "incident.queue";
-    public static final String ROUTING_KEY = "monitor.failed";
+
+    public static final String INCIDENT_QUEUE = "incident.queue";
+    public static final String INCIDENT_ROUTING_KEY = "monitor.failed";
+
+    public static final String RESOLVED_INCIDENT_QUEUE = "incident.resolved.queue";
+    public static final String RESOLVED_ROUTING_KEY = "monitor.resolved";
 
     @Bean
     TopicExchange monitorExchange() {
@@ -25,12 +32,22 @@ public class RabbitMQConfig {
 
     @Bean
     Queue incidentQueue() {
-        return new Queue(QUEUE);
+        return new Queue(INCIDENT_QUEUE);
     }
 
     @Bean
-    Binding binding(Queue incidentQueue, TopicExchange monitorExchange) {
-        return BindingBuilder.bind(incidentQueue).to(monitorExchange).with(ROUTING_KEY);
+    Queue resolvedQueue() {
+        return new Queue(RESOLVED_INCIDENT_QUEUE);
+    }
+
+    @Bean
+    Binding incidentBinding(Queue incidentQueue, TopicExchange monitorExchange) {
+        return BindingBuilder.bind(incidentQueue).to(monitorExchange).with(INCIDENT_ROUTING_KEY);
+    }
+
+    @Bean
+    Binding resolvedBinding(Queue resolvedQueue, TopicExchange monitorExchange) {
+        return BindingBuilder.bind(resolvedQueue).to(monitorExchange).with(RESOLVED_ROUTING_KEY);
     }
 
     @Bean
@@ -46,5 +63,22 @@ public class RabbitMQConfig {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
         return rabbitTemplate;
+    }
+
+    @Bean
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+            SimpleRabbitListenerContainerFactoryConfigurer configurer,
+            ConnectionFactory connectionFactory,
+            MessageConverter messageConverter
+    ) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        configurer.configure(factory, connectionFactory);
+        factory.setMessageConverter(messageConverter);
+        factory.setAdviceChain(RetryInterceptorBuilder.stateless()
+                .maxAttempts(3)
+                .backOffOptions(1000, 2.0, 10000)
+                .recoverer(new RejectAndDontRequeueRecoverer())
+                .build());
+        return factory;
     }
 }
