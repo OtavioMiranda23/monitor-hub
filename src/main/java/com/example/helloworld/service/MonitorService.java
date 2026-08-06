@@ -3,12 +3,11 @@ import com.example.helloworld.controller.dto.CreateMonitorRequest;
 import com.example.helloworld.domain.entities.MonitorEntity;
 import com.example.helloworld.domain.entities.MonitorType;
 import com.example.helloworld.infra.repositories.MonitorRepository;
+import com.example.helloworld.infra.exception.MonitorAlreadyExistsException;
 import com.example.helloworld.infra.repositories.dto.MonitorSummary;
-import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.ResourceAccessException;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -32,7 +31,7 @@ public class MonitorService {
         monitor.setNextExecution(Instant.now());
         Boolean hasMonitorWithSameUrl = this.monitorRepository.existsByUrl(monitorRequest.url());
         if (hasMonitorWithSameUrl) {
-            throw new ResourceAccessException("Monitor already exists");
+            throw new MonitorAlreadyExistsException("Já existe um monitor cadastrado com esta URL");
         }
         return monitorRepository.save(monitor);
     }
