@@ -5,16 +5,14 @@ import com.example.helloworld.domain.entities.MonitorEntity;
 import com.example.helloworld.domain.entities.MonitorExecution;
 import com.example.helloworld.infra.queue.MonitorExecutionFailedEvent;
 import com.example.helloworld.infra.queue.MonitorExecutionResolvedEvent;
-import com.example.helloworld.infra.queue.RabbitMQConfig;
+import com.example.helloworld.service.ports.IMonitorExecutionEventPublisher;
 import com.example.helloworld.infra.repositories.IncidentRepository;
 import com.example.helloworld.infra.repositories.MonitorExecutionRepository;
 import com.example.helloworld.infra.repositories.MonitorRepository;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,9 +21,7 @@ import org.springframework.util.StopWatch;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
 
-import javax.management.monitor.Monitor;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -46,7 +42,7 @@ public class MonitorExecutionService {
     public IncidentRepository incidentRepository;
 
     @Autowired
-    public RabbitTemplate rabbitTemplate;
+    public IMonitorExecutionEventPublisher eventPublisher;
 
     @Value("${monitor.batch-size}")
     private Integer batchSize;
@@ -132,11 +128,7 @@ public class MonitorExecutionService {
                 execution.getId(),
                 execution.getStatus()
         );
-        rabbitTemplate.convertAndSend(
-                RabbitMQConfig.EXCHANGE,
-                RabbitMQConfig.INCIDENT_ROUTING_KEY,
-                event
-        );
+        eventPublisher.sendFailedEvent(event);
     }
 
     private void emitResolveIncident(MonitorExecution execution) {
@@ -149,11 +141,7 @@ public class MonitorExecutionService {
         boolean hasIncidentNotResolved = incident.getResolvedAt() == null;
         if (hasIncidentNotResolved) {
             var event = new MonitorExecutionResolvedEvent(execution.getMonitor().getId(), execution.getId());
-            rabbitTemplate.convertAndSend(
-                    RabbitMQConfig.EXCHANGE,
-                    RabbitMQConfig.RESOLVED_ROUTING_KEY,
-                    event
-            );
+            eventPublisher.sendResolvedEvent(event);
 
         }
     }
