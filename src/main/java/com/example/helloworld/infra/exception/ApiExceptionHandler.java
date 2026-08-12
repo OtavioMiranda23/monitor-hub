@@ -134,6 +134,16 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }
 
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<ProblemDetail> handleUserAlreadyExists(
+            UserAlreadyExistsException ex,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problem = buildProblem(HttpStatus.CONFLICT, request,
+                "Conflito", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleGenericException(
             Exception ex,
