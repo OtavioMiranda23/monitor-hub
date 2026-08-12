@@ -1,9 +1,12 @@
 package com.example.helloworld.controller;
 
+import com.example.helloworld.TestAuthHelper;
 import com.example.helloworld.domain.entities.MonitorEntity;
 import com.example.helloworld.infra.repositories.MonitorExecutionRepository;
 import com.example.helloworld.infra.repositories.MonitorRepository;
+import com.example.helloworld.infra.repositories.UserRepository;
 import com.example.helloworld.infra.repositories.dto.MonitorSummary;
+import com.example.helloworld.infra.security.JwtService;
 import com.example.helloworld.service.MonitorExecutionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
@@ -14,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.net.InetSocketAddress;
@@ -46,6 +50,16 @@ class MonitorSummaryE2ETest {
     @Autowired
     private MonitorExecutionService monitorExecutionService;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
+
+    private String adminToken;
     private HttpServer server;
     private ExecutorService serverExecutor;
 
@@ -53,6 +67,8 @@ class MonitorSummaryE2ETest {
     void setUp() throws Exception {
         monitorExecutionRepository.deleteAll();
         monitorRepository.deleteAll();
+        userRepository.deleteAll();
+        adminToken = TestAuthHelper.adminToken(userRepository, passwordEncoder, jwtService);
 
         serverExecutor = Executors.newCachedThreadPool();
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -86,7 +102,8 @@ class MonitorSummaryE2ETest {
         scheduleNextScanNow(monitorId);
         monitorExecutionService.scanMonitors();
 
-        String responseBody = mockMvc.perform(get("/monitors/{id}", monitorId))
+        String responseBody = mockMvc.perform(get("/monitors/{id}", monitorId)
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -107,7 +124,8 @@ class MonitorSummaryE2ETest {
         scheduleNextScanNow(monitorId);
         monitorExecutionService.scanMonitors();
 
-        String responseBody = mockMvc.perform(get("/monitors/{id}", monitorId))
+        String responseBody = mockMvc.perform(get("/monitors/{id}", monitorId)
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -129,6 +147,7 @@ class MonitorSummaryE2ETest {
                 """.formatted(url);
 
         String responseBody = mockMvc.perform(post("/monitors")
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isCreated())

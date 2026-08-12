@@ -54,6 +54,8 @@ class VerifyUrlControllerTest {
     }
     @Test
     void shouldCreateMonitorAndReturnHelloWorld() throws Exception {
+        String token = login();
+
         String requestJson = """
                 {
                     "name": "Meu Monitor",
@@ -63,6 +65,7 @@ class VerifyUrlControllerTest {
         var client = RestClient.create();
         ResponseEntity<String> response = client.post()
                 .uri("http://localhost:8080/monitors")
+                .header("Authorization", "Bearer " + token)
                 .contentType(APPLICATION_JSON)
                 .body(requestJson)
                 .retrieve()
@@ -101,6 +104,8 @@ class VerifyUrlControllerTest {
 
     @Test
     void shouldCreateIncident() throws JsonProcessingException {
+        String token = login();
+
         String requestJson = """
                 {
                     "name": "Timeout",
@@ -110,6 +115,7 @@ class VerifyUrlControllerTest {
         var client = RestClient.create();
         ResponseEntity<String> response = client.post()
                 .uri("http://localhost:8080/monitors")
+                .header("Authorization", "Bearer " + token)
                 .contentType(APPLICATION_JSON)
                 .body(requestJson)
                 .retrieve()
@@ -119,5 +125,22 @@ class VerifyUrlControllerTest {
         Incident incident = this.incidentRepository.findByMonitorId(UUID.fromString(monitorId)).orElseThrow();
         assertThat(incident.getId()).isNotNull();
 
+    }
+
+    private String login() throws JsonProcessingException {
+        String loginBody = """
+                {
+                    "email": "admin@test.com",
+                    "password": "senhaSegura123"
+                }
+                """;
+        var client = RestClient.create();
+        ResponseEntity<String> response = client.post()
+                .uri("http://localhost:8080/auth/login")
+                .contentType(APPLICATION_JSON)
+                .body(loginBody)
+                .retrieve()
+                .toEntity(String.class);
+        return objectMapper.readTree(response.getBody()).get("accessToken").asText();
     }
 }

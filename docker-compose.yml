@@ -30,6 +30,7 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
+      JWT_SECRET: ${JWT_SECRET:-monitor-hub-secret-key-para-assinatura-hs256-troque-em-producao}
 
       JAVA_TOOL_OPTIONS: >
         -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005

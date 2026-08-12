@@ -1,13 +1,17 @@
 package com.example.helloworld.controller;
 
+import com.example.helloworld.TestAuthHelper;
 import com.example.helloworld.infra.repositories.MonitorExecutionRepository;
 import com.example.helloworld.infra.repositories.MonitorRepository;
+import com.example.helloworld.infra.repositories.UserRepository;
+import com.example.helloworld.infra.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
@@ -30,10 +34,23 @@ class ApiExceptionHandlerE2ETest {
     @Autowired
     private MonitorExecutionRepository monitorExecutionRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
+
+    private String adminToken;
+
     @BeforeEach
     void setUp() {
         monitorExecutionRepository.deleteAll();
         monitorRepository.deleteAll();
+        userRepository.deleteAll();
+        adminToken = TestAuthHelper.adminToken(userRepository, passwordEncoder, jwtService);
     }
 
     @Test
@@ -46,6 +63,7 @@ class ApiExceptionHandlerE2ETest {
                 """;
 
         mockMvc.perform(post("/monitors")
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidBody))
                 .andExpect(status().isBadRequest())
@@ -58,6 +76,7 @@ class ApiExceptionHandlerE2ETest {
     @Test
     void shouldReturnBadRequestWhenBodyIsMalformed() throws Exception {
         mockMvc.perform(post("/monitors")
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{"))
                 .andExpect(status().isBadRequest())
@@ -66,14 +85,16 @@ class ApiExceptionHandlerE2ETest {
 
     @Test
     void shouldReturnBadRequestWhenPathVariableHasInvalidUuid() throws Exception {
-        mockMvc.perform(get("/monitors/not-a-uuid"))
+        mockMvc.perform(get("/monitors/not-a-uuid")
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Argumento inválido"));
     }
 
     @Test
     void shouldReturnNotFoundWhenMonitorDoesNotExist() throws Exception {
-        mockMvc.perform(get("/monitors/{id}", UUID.randomUUID()))
+        mockMvc.perform(get("/monitors/{id}", UUID.randomUUID())
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.title").value("Recurso não encontrado"))
                 .andExpect(jsonPath("$.detail").value("Monitor not found"));
@@ -89,11 +110,13 @@ class ApiExceptionHandlerE2ETest {
                 """;
 
         mockMvc.perform(post("/monitors")
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/monitors")
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isConflict())
@@ -104,7 +127,8 @@ class ApiExceptionHandlerE2ETest {
     @Test
     void shouldReturnProblemDetailWithTimestampAndInstance() throws Exception {
         UUID monitorId = UUID.randomUUID();
-        mockMvc.perform(get("/monitors/{id}", monitorId))
+        mockMvc.perform(get("/monitors/{id}", monitorId)
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.timestamp").isNotEmpty())
                 .andExpect(jsonPath("$.instance").value("/monitors/" + monitorId));

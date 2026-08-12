@@ -3,12 +3,14 @@ package com.example.helloworld.infra.exception;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import io.jsonwebtoken.JwtException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -92,6 +94,26 @@ public class ApiExceptionHandler {
         ProblemDetail problem = buildProblem(HttpStatus.NOT_FOUND, request,
                 "Recurso não encontrado", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ProblemDetail> handleAuthentication(
+            AuthenticationException ex,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problem = buildProblem(HttpStatus.UNAUTHORIZED, request,
+                "Não autorizado", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problem);
+    }
+
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<ProblemDetail> handleJwt(
+            JwtException ex,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problem = buildProblem(HttpStatus.UNAUTHORIZED, request,
+                "Não autorizado", "Token inválido ou expirado");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problem);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

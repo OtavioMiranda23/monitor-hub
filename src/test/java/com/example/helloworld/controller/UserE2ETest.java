@@ -1,7 +1,9 @@
 package com.example.helloworld.controller;
 
+import com.example.helloworld.TestAuthHelper;
 import com.example.helloworld.domain.entities.UserRole;
 import com.example.helloworld.infra.repositories.UserRepository;
+import com.example.helloworld.infra.security.JwtService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,14 +37,21 @@ class UserE2ETest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JwtService jwtService;
+
+    private String adminToken;
+
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
+        adminToken = TestAuthHelper.adminToken(userRepository, passwordEncoder, jwtService);
     }
 
     @Test
     void shouldCreateUserStoringOnlyBcryptHashAndNotExposingPassword() throws Exception {
         String responseBody = mockMvc.perform(post("/users")
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -75,6 +84,7 @@ class UserE2ETest {
     @Test
     void shouldRejectDuplicateEmail() throws Exception {
         mockMvc.perform(post("/users")
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -87,6 +97,7 @@ class UserE2ETest {
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/users")
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -103,6 +114,7 @@ class UserE2ETest {
     @Test
     void shouldRejectInvalidPayload() throws Exception {
         mockMvc.perform(post("/users")
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -120,7 +132,8 @@ class UserE2ETest {
     void shouldFindUserById() throws Exception {
         UUID userId = createUser("Maria", "maria@example.com", UserRole.ADMIN);
 
-        mockMvc.perform(get("/users/{id}", userId))
+        mockMvc.perform(get("/users/{id}", userId)
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(userId.toString()))
                 .andExpect(jsonPath("$.name").value("Maria"))
@@ -130,7 +143,8 @@ class UserE2ETest {
 
     @Test
     void shouldReturnNotFoundWhenUserDoesNotExist() throws Exception {
-        mockMvc.perform(get("/users/{id}", UUID.randomUUID()))
+        mockMvc.perform(get("/users/{id}", UUID.randomUUID())
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNotFound());
     }
 
@@ -139,9 +153,10 @@ class UserE2ETest {
         createUser("Maria", "maria@example.com", UserRole.ADMIN);
         createUser("João", "joao@example.com", UserRole.USER);
 
-        mockMvc.perform(get("/users"))
+        mockMvc.perform(get("/users")
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(3));
     }
 
     @Test
@@ -149,6 +164,7 @@ class UserE2ETest {
         UUID userId = createUser("Maria", "maria@example.com", UserRole.ADMIN);
 
         mockMvc.perform(put("/users/{id}", userId)
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -172,6 +188,7 @@ class UserE2ETest {
         UUID joaoId = createUser("João", "joao@example.com", UserRole.USER);
 
         mockMvc.perform(put("/users/{id}", joaoId)
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -185,7 +202,8 @@ class UserE2ETest {
     void shouldDeleteUser() throws Exception {
         UUID userId = createUser("Maria", "maria@example.com", UserRole.ADMIN);
 
-        mockMvc.perform(delete("/users/{id}", userId))
+        mockMvc.perform(delete("/users/{id}", userId)
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNoContent());
 
         assertThat(userRepository.existsById(userId)).isFalse();
@@ -193,6 +211,7 @@ class UserE2ETest {
 
     private UUID createUser(String name, String email, UserRole role) throws Exception {
         String responseBody = mockMvc.perform(post("/users")
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
