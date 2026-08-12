@@ -63,6 +63,10 @@ public class MonitorEntity {
     )
     private List<Incident> incidents = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY,  optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
+
     public MonitorEntity(
             String name,
             String url,
