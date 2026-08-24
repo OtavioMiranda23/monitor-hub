@@ -1,50 +1,53 @@
 package com.example.helloworld.domain.entities;
+import com.example.helloworld.domain.entities.valueObjects.*;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.sql.Time;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
 @Table(name = "monitors")
 @NoArgsConstructor
-@AllArgsConstructor
 @Getter
-@Setter
 public class MonitorEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false)
-    private String name;
+    private Name name;
 
     @Column(nullable = false, length = 2048)
-    private String url;
+    private Url url;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MonitorType type;
 
+    @Setter
     @Column(nullable = false)
-    private Integer intervalToRunSeconds;
+    private IntervalToRun intervalToRun;
 
     @Column(nullable = false)
-    private Integer timeoutMilliseconds;
+    private Timeout timeout;
 
     @Column(nullable = false)
     private Integer expectedStatusCode = 200;
 
     @Column(nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @Column(nullable = false)
-    private Instant nextExecution;
+    private NextExecution nextExecution;
 
     @Column(nullable = false)
     private Instant createdAt;
@@ -64,18 +67,19 @@ public class MonitorEntity {
     private List<Incident> incidents = new ArrayList<>();
 
     public MonitorEntity(
-            String name,
-            String url,
+            Name name,
+            Url url,
             MonitorType type,
-            Integer intervalToRunSeconds,
-            Integer timeoutMilliseconds
+            IntervalToRun intervalToRun,
+            Timeout timeout
 
     ) {
         this.name = name;
         this.url = url;
         this.type = type;
-        this.intervalToRunSeconds = intervalToRunSeconds;
-        this.timeoutMilliseconds = timeoutMilliseconds;
+        this.intervalToRun = intervalToRun;
+        this.timeout = timeout;
+        this.setNextExecution();
     }
 
     @PrePersist
@@ -84,7 +88,7 @@ public class MonitorEntity {
     }
 
     public void setNextExecution() {
-        this.nextExecution = Instant.now().plusSeconds(this.getIntervalToRunSeconds());
+        this.nextExecution = NextExecution.from(Instant.now(), this.getIntervalToRun().value());
     }
 
 }

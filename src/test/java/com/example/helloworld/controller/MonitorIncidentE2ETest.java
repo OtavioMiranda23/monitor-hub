@@ -111,7 +111,7 @@ class MonitorIncidentE2ETest {
         assertThat(incident.getResolvedAt()).isNull();
 
         MonitorEntity monitor = monitorRepository.findById(monitorId).orElseThrow();
-        monitor.setUrl(baseUrl + "/ok");
+//        monitor.setUrl(baseUrl + "/ok");
         monitor.setNextExecution(Instant.now().minusSeconds(60));
         monitorRepository.save(monitor);
 
