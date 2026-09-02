@@ -1,7 +1,10 @@
 package com.example.helloworld.domain.entities.valueObjects;
 
+import jakarta.persistence.Embeddable;
+
 import java.net.URI;
 
+@Embeddable
 public record Url(
         String value
 ) {

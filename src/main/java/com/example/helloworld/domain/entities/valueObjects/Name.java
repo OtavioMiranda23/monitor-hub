@@ -1,5 +1,8 @@
 package com.example.helloworld.domain.entities.valueObjects;
 
+import jakarta.persistence.Embeddable;
+
+@Embeddable
 public record Name(String value) {
     public Name {
         if (value == null || value.isBlank()) {

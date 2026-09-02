@@ -1,6 +1,7 @@
 package com.example.helloworld.infra.repositories;
 
 import com.example.helloworld.domain.entities.MonitorEntity;
+import com.example.helloworld.domain.entities.valueObjects.NextExecution;
 import com.example.helloworld.infra.repositories.dto.MonitorSummary;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,21 +17,21 @@ public interface MonitorRepository extends JpaRepository<MonitorEntity, UUID> {
     @Query("""
 SELECT new com.example.helloworld.infra.repositories.dto.MonitorSummary(
     m.id,
-    m.name,
-    m.url,
-    CASE 
-        WHEN e.httpStatusCode != 200 THEN true 
+    m.name.value,
+    m.url.value,
+    CASE
+        WHEN e.httpStatusCode != 200 THEN true
         ELSE false
     END,
     e.responseTimeMilliseconds,
     e.httpStatusCode
     )
 FROM MonitorEntity m
-INNER JOIN MonitorExecution e ON
-    e.monitor.id = :id
+INNER JOIN MonitorExecution e ON e.monitor.id = m.id
+WHERE m.id = :id
 ORDER BY e.checkedAt DESC
 """)
-    Optional<MonitorSummary> findMonitorSummary(UUID id);
+    Optional<MonitorSummary> findMonitorSummary(@Param("id") UUID id);
 
     @Query("""
     SELECT m

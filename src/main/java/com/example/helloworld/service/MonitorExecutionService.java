@@ -90,8 +90,8 @@ public class MonitorExecutionService {
     private ProbeResult probeTarget(MonitorEntity monitor) {
         try {
             var client = this.getRestClient(
-                    monitor.getTimeoutMilliseconds(),
-                    monitor.getTimeoutMilliseconds()
+                    monitor.getTimeout().toMillisPart(),
+                    monitor.getTimeout().toMillisPart()
             );
             ResponseEntity<String> response = client
                     .get()
