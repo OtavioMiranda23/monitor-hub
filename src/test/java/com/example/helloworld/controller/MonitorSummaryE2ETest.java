@@ -1,6 +1,6 @@
 package com.example.helloworld.controller;
 
-import com.example.helloworld.domain.entities.MonitorEntity;
+import com.example.helloworld.domain.entities.monitor.MonitorEntity;
 import com.example.helloworld.infra.repositories.MonitorExecutionRepository;
 import com.example.helloworld.infra.repositories.MonitorRepository;
 import com.example.helloworld.infra.repositories.dto.MonitorSummary;

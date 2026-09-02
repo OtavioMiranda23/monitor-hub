@@ -1,6 +1,6 @@
-package com.example.helloworld.domain.entities.converters;
+package com.example.helloworld.domain.entities.monitor.converters;
 
-import com.example.helloworld.domain.entities.valueObjects.IntervalToRun;
+import com.example.helloworld.domain.entities.monitor.valueObjects.IntervalToRun;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 

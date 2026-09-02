@@ -1,11 +1,11 @@
 package com.example.helloworld.service;
 import com.example.helloworld.controller.dto.CreateMonitorRequest;
-import com.example.helloworld.domain.entities.MonitorEntity;
-import com.example.helloworld.domain.entities.MonitorType;
-import com.example.helloworld.domain.entities.valueObjects.IntervalToRun;
-import com.example.helloworld.domain.entities.valueObjects.Name;
-import com.example.helloworld.domain.entities.valueObjects.Timeout;
-import com.example.helloworld.domain.entities.valueObjects.Url;
+import com.example.helloworld.domain.entities.monitor.MonitorEntity;
+import com.example.helloworld.domain.entities.monitor.MonitorType;
+import com.example.helloworld.domain.entities.monitor.valueObjects.IntervalToRun;
+import com.example.helloworld.domain.entities.monitor.valueObjects.Name;
+import com.example.helloworld.domain.entities.monitor.valueObjects.Timeout;
+import com.example.helloworld.domain.entities.monitor.valueObjects.Url;
 import com.example.helloworld.infra.repositories.MonitorRepository;
 import com.example.helloworld.infra.exception.MonitorAlreadyExistsException;
 import com.example.helloworld.infra.repositories.dto.MonitorSummary;
@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.UUID;
 
 

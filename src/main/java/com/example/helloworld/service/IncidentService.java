@@ -1,9 +1,8 @@
 package com.example.helloworld.service;
 
-import com.example.helloworld.domain.entities.Incident;
-import com.example.helloworld.domain.entities.IncidentStatus;
-import com.example.helloworld.domain.entities.MonitorEntity;
-import com.example.helloworld.domain.entities.MonitorExecution;
+import com.example.helloworld.domain.entities.incident.Incident;
+import com.example.helloworld.domain.entities.incident.IncidentStatus;
+import com.example.helloworld.domain.entities.monitor.MonitorEntity;
 import com.example.helloworld.infra.queue.MonitorExecutionFailedEvent;
 import com.example.helloworld.infra.queue.MonitorExecutionResolvedEvent;
 import com.example.helloworld.infra.repositories.IncidentRepository;

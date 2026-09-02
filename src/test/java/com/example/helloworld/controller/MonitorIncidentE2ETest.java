@@ -1,13 +1,12 @@
 package com.example.helloworld.controller;
 
-import com.example.helloworld.domain.entities.Incident;
-import com.example.helloworld.domain.entities.IncidentStatus;
-import com.example.helloworld.domain.entities.MonitorEntity;
+import com.example.helloworld.domain.entities.incident.Incident;
+import com.example.helloworld.domain.entities.incident.IncidentStatus;
+import com.example.helloworld.domain.entities.monitor.MonitorEntity;
 import com.example.helloworld.infra.repositories.IncidentRepository;
 import com.example.helloworld.infra.repositories.MonitorExecutionRepository;
 import com.example.helloworld.infra.repositories.MonitorRepository;
 import com.example.helloworld.service.MonitorExecutionService;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;

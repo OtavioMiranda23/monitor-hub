@@ -1,7 +1,6 @@
 package com.example.helloworld.infra.repositories;
 
-import com.example.helloworld.domain.entities.Incident;
-import com.example.helloworld.domain.entities.MonitorExecution;
+import com.example.helloworld.domain.entities.incident.Incident;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

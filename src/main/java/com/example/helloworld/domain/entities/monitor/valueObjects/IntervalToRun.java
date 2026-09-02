@@ -1,4 +1,4 @@
-package com.example.helloworld.domain.entities.valueObjects;
+package com.example.helloworld.domain.entities.monitor.valueObjects;
 
 import java.time.Duration;
 

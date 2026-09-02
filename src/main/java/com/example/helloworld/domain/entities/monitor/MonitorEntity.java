@@ -1,16 +1,14 @@
-package com.example.helloworld.domain.entities;
-import com.example.helloworld.domain.entities.converters.IntervalToRunConverter;
-import com.example.helloworld.domain.entities.converters.NextExecutionConverter;
-import com.example.helloworld.domain.entities.converters.TimeoutConverter;
-import com.example.helloworld.domain.entities.valueObjects.*;
+package com.example.helloworld.domain.entities.monitor;
+import com.example.helloworld.domain.entities.incident.Incident;
+import com.example.helloworld.domain.entities.execution.MonitorExecution;
+import com.example.helloworld.domain.entities.monitor.converters.IntervalToRunConverter;
+import com.example.helloworld.domain.entities.monitor.converters.NextExecutionConverter;
+import com.example.helloworld.domain.entities.monitor.converters.TimeoutConverter;
+import com.example.helloworld.domain.entities.monitor.valueObjects.*;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.hibernate.validator.cfg.defs.CurrencyDef;
 
-import java.sql.Time;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;

@@ -1,8 +1,9 @@
 package com.example.helloworld.service;
 
-import com.example.helloworld.domain.entities.ExecutionStatus;
-import com.example.helloworld.domain.entities.MonitorEntity;
-import com.example.helloworld.domain.entities.MonitorExecution;
+import com.example.helloworld.domain.entities.execution.ExecutionStatus;
+import com.example.helloworld.domain.entities.execution.valueObjects.ResponseTime;
+import com.example.helloworld.domain.entities.monitor.MonitorEntity;
+import com.example.helloworld.domain.entities.execution.MonitorExecution;
 import com.example.helloworld.infra.queue.MonitorExecutionFailedEvent;
 import com.example.helloworld.infra.queue.MonitorExecutionResolvedEvent;
 import com.example.helloworld.service.ports.IMonitorExecutionEventPublisher;
@@ -61,7 +62,8 @@ public class MonitorExecutionService {
         var result = this.probeTarget(monitor);
         if (stopWatch.isRunning()) stopWatch.stop();
         Long reqIntervalMillis = stopWatch.getTotalTimeMillis();
-        var monitorExecution = this.createMonitorExecution(monitor, result, reqIntervalMillis);
+        Duration reqInterval = Duration.ofMillis(reqIntervalMillis);
+        var monitorExecution = this.createMonitorExecution(monitor, result, reqInterval);
         monitor.setNextExecution();
         var newMonitor = this.monitorRepository.save(monitor);
         if (monitorExecution.getStatus() == ExecutionStatus.FAILURE || monitorExecution.getStatus() == ExecutionStatus.TIMEOUT) {
@@ -84,7 +86,6 @@ public class MonitorExecutionService {
                 .builder().
                 requestFactory(requestFactory)
                 .build();
-
     }
 
     private ProbeResult probeTarget(MonitorEntity monitor) {
@@ -111,12 +112,13 @@ public class MonitorExecutionService {
 
     private record ProbeResult(ExecutionStatus executionStatus, Optional<Integer> statusCode){}
 
-    private MonitorExecution createMonitorExecution(MonitorEntity monitor, ProbeResult result, Long requestTime) {
+    private MonitorExecution createMonitorExecution(MonitorEntity monitor, ProbeResult result, Duration requestTime) {
+        var responseTime = new ResponseTime(requestTime);
         var monitorExecution = new MonitorExecution(
                 monitor,
                 result.executionStatus,
                 result.statusCode.orElse(500),
-                requestTime
+                responseTime
         );
         return this.monitorExecutionRepository.save(monitorExecution);
     }

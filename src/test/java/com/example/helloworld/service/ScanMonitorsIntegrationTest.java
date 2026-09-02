@@ -1,8 +1,8 @@
 package com.example.helloworld.service;
 
-import com.example.helloworld.domain.entities.MonitorEntity;
-import com.example.helloworld.domain.entities.MonitorExecution;
-import com.example.helloworld.domain.entities.MonitorType;
+import com.example.helloworld.domain.entities.monitor.MonitorEntity;
+import com.example.helloworld.domain.entities.execution.MonitorExecution;
+import com.example.helloworld.domain.entities.monitor.MonitorType;
 import com.example.helloworld.infra.repositories.MonitorExecutionRepository;
 import com.example.helloworld.infra.repositories.MonitorRepository;
 import org.junit.jupiter.api.BeforeEach;

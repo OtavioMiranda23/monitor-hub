@@ -1,7 +1,6 @@
 package com.example.helloworld.infra.repositories;
 
-import com.example.helloworld.domain.entities.MonitorEntity;
-import com.example.helloworld.domain.entities.valueObjects.NextExecution;
+import com.example.helloworld.domain.entities.monitor.MonitorEntity;
 import com.example.helloworld.infra.repositories.dto.MonitorSummary;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,13 +22,14 @@ SELECT new com.example.helloworld.infra.repositories.dto.MonitorSummary(
         WHEN e.httpStatusCode != 200 THEN true
         ELSE false
     END,
-    e.responseTimeMilliseconds,
+    e.responseTime.value,
     e.httpStatusCode
     )
 FROM MonitorEntity m
 INNER JOIN MonitorExecution e ON e.monitor.id = m.id
 WHERE m.id = :id
 ORDER BY e.checkedAt DESC
+LIMIT 1
 """)
     Optional<MonitorSummary> findMonitorSummary(@Param("id") UUID id);
 

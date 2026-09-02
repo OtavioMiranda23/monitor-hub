@@ -1,5 +1,6 @@
-package com.example.helloworld.domain.entities;
+package com.example.helloworld.domain.entities.incident;
 
+import com.example.helloworld.domain.entities.monitor.MonitorEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
