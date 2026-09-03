@@ -12,9 +12,11 @@ import com.example.helloworld.infra.repositories.dto.MonitorSummary;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -49,7 +51,8 @@ public class MonitorService {
     }
 
     public MonitorSummary findById(UUID id) {
-       return this.monitorRepository.findMonitorSummary(id)
-               .orElseThrow(() -> new EntityNotFoundException("Monitor not found"));
+        List<MonitorSummary> summaries = this.monitorRepository.findMonitorSummary(id, PageRequest.of(0,1));
+        if (summaries.isEmpty()) throw new EntityNotFoundException("Monitor not found");
+        return summaries.getFirst();
     }
 }

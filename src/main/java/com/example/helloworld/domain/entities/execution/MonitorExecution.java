@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 @NoArgsConstructor
@@ -32,6 +33,7 @@ public class MonitorExecution {
     @Column(nullable = false)
     private ExecutionStatus status;
 
+    @Getter
     private Integer httpStatusCode;
 
     @Convert(converter = ResponseTimeConverter.class)
@@ -66,5 +68,9 @@ public class MonitorExecution {
 
     public String getErrorMessage() {
         return this.errorMessage.value();
+    }
+
+    public Duration getResponseTime() {
+        return responseTime.value();
     }
 }

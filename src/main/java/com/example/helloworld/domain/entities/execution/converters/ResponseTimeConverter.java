@@ -7,16 +7,16 @@ import jakarta.persistence.Converter;
 import java.time.Duration;
 
 @Converter
-public class ResponseTimeConverter implements AttributeConverter<ResponseTime, Duration> {
+public class ResponseTimeConverter implements AttributeConverter<ResponseTime, Long> {
     @Override
-    public Duration convertToDatabaseColumn(ResponseTime responseTime) {
+    public Long convertToDatabaseColumn(ResponseTime responseTime) {
         if (responseTime == null) return null;
-        return responseTime.value();
+        return responseTime.value().toMillis();
     }
 
     @Override
-    public ResponseTime convertToEntityAttribute(Duration value) {
-        if (value == null) return null;
-        return new ResponseTime(value);
+    public ResponseTime convertToEntityAttribute(Long millis) {
+        if (millis == null) return null;
+        return new ResponseTime(Duration.ofMillis(millis));
     }
 }

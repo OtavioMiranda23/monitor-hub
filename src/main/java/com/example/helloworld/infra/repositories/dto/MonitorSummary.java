@@ -1,7 +1,9 @@
 package com.example.helloworld.infra.repositories.dto;
 
+import com.example.helloworld.domain.entities.execution.valueObjects.ResponseTime;
 import org.springframework.http.HttpStatus;
 
+import java.time.Duration;
 import java.util.UUID;
 
 public record MonitorSummary(
@@ -9,7 +11,7 @@ public record MonitorSummary(
         String name,
         String url,
         Boolean isDown,
-        Long timeToResponseMillis,
+        ResponseTime responseTime,
         Integer httpStatus
 ) {
 }

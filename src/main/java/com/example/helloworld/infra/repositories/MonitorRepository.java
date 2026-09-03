@@ -14,24 +14,26 @@ import java.util.UUID;
 @Repository
 public interface MonitorRepository extends JpaRepository<MonitorEntity, UUID> {
     @Query("""
-SELECT new com.example.helloworld.infra.repositories.dto.MonitorSummary(
-    m.id,
-    m.name.value,
-    m.url.value,
-    CASE
-        WHEN e.httpStatusCode != 200 THEN true
-        ELSE false
-    END,
-    e.responseTime.value,
-    e.httpStatusCode
+    SELECT new com.example.helloworld.infra.repositories.dto.MonitorSummary(
+        m.id,
+        m.name.value,
+        m.url.value,
+        CASE
+            WHEN e.httpStatusCode != 200 THEN true
+            ELSE false
+        END,
+        e.responseTime,
+        e.httpStatusCode
     )
-FROM MonitorEntity m
-INNER JOIN MonitorExecution e ON e.monitor.id = m.id
-WHERE m.id = :id
-ORDER BY e.checkedAt DESC
-LIMIT 1
+    FROM MonitorEntity m
+    INNER JOIN m.executions e
+    WHERE m.id = :id
+    ORDER BY e.checkedAt DESC
 """)
-    Optional<MonitorSummary> findMonitorSummary(@Param("id") UUID id);
+    List<MonitorSummary> findMonitorSummary(
+            @Param("id") UUID id,
+            Pageable pageable
+    );
 
     @Query("""
     SELECT m

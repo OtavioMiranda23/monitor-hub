@@ -7,17 +7,17 @@ import jakarta.persistence.Converter;
 import java.time.Duration;
 
 @Converter
-public class TimeoutConverter implements AttributeConverter<Timeout, Duration> {
+public class TimeoutConverter implements AttributeConverter<Timeout, Long> {
 
     @Override
-    public Duration convertToDatabaseColumn(Timeout timeout) {
+    public Long convertToDatabaseColumn(Timeout timeout) {
         if (timeout == null) return null;
-        return timeout.value();
+        return timeout.value().toSeconds();
     }
 
     @Override
-    public Timeout convertToEntityAttribute(Duration value) {
-        if (value == null) return null;
-        return new Timeout(value);
+    public Timeout convertToEntityAttribute(Long seconds) {
+        if (seconds == null) return null;
+        return new Timeout(Duration.ofSeconds(seconds));
     }
 }

@@ -7,16 +7,16 @@ import jakarta.persistence.Converter;
 import java.time.Instant;
 
 @Converter
-public class NextExecutionConverter implements AttributeConverter<NextExecution, Instant> {
+public class NextExecutionConverter implements AttributeConverter<NextExecution, Long> {
     @Override
-    public Instant convertToDatabaseColumn(NextExecution nextExecution) {
+    public Long convertToDatabaseColumn(NextExecution nextExecution) {
         if (nextExecution == null) return null;
-        return nextExecution.value();
+        return nextExecution.value().getEpochSecond();
     }
 
     @Override
-    public NextExecution convertToEntityAttribute(Instant value) {
-        if (value == null) return null;
-        return new NextExecution(value);
+    public NextExecution convertToEntityAttribute(Long seconds) {
+        if (seconds == null) return null;
+        return new NextExecution(Instant.ofEpochSecond(seconds));
     }
 }
